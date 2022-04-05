@@ -13,8 +13,9 @@ struct CarouselSampleApp: App {
 
     var body: some Scene {
         WindowGroup {
+//            DemoView()
+//                .environment(\.managedObjectContext, persistenceController.container.viewContext)
             ContentView()
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

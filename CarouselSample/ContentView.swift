@@ -6,83 +6,106 @@
 //
 
 import SwiftUI
-import CoreData
+               
+//struct Item: Identifiable {
+//    let id = UUID()
+//    let image: Image
+//}
+
+let roles = ["Luffy", "Zoro", "Sanji", "Nami", "Usopp", "Chopper", "Robin", "Franky", "Brook"]
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
+    
+    @State var spacing: CGFloat = 10
+    @State var headspace: CGFloat = 10
+    @State var sidesScaling: CGFloat = 0.8
+    @State var isWrap: Bool = false
+    @State var autoScroll: Bool = false
+    @State var time: TimeInterval = 1
+    @State var currentIndex: Int = 0
+    
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        VStack {
+            Text("\(currentIndex + 1)/\(roles.count)")
+            Spacer().frame(height: 40)
+            ACarousel(roles,
+                      id: \.self,
+                      index: $currentIndex,
+                      spacing: spacing,
+                      headspace: headspace,
+                      sidesScaling: sidesScaling,
+                      isWrap: isWrap,
+                      autoScroll: autoScroll ? .active(time) : .inactive) { name in
+                Image(name)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 300)
+                    .cornerRadius(30)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+            .frame(height: 300)
+            Spacer()
+            
+            ControlPanel(spacing: $spacing,
+                         headspace: $headspace,
+                         sidesScaling: $sidesScaling,
+                         isWrap: $isWrap,
+                         autoScroll: $autoScroll,
+                         duration: $time)
+            Spacer()
         }
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
+struct ControlPanel: View {
+    
+    @Binding var spacing: CGFloat
+    @Binding var headspace: CGFloat
+    @Binding var sidesScaling: CGFloat
+    @Binding var isWrap: Bool
+    @Binding var autoScroll: Bool
+    @Binding var duration: TimeInterval
+    
+    var body: some View {
+        VStack {
+            Group {
+                HStack {
+                    Text("spacing: ").frame(width: 120)
+                    Slider(value: $spacing, in: 0...30, minimumValueLabel: Text("0"), maximumValueLabel: Text("30")) { EmptyView() }
+                }
+                HStack {
+                    Text("headspace: ").frame(width: 120)
+                    Slider(value: $headspace, in: 0...30, minimumValueLabel: Text("0"), maximumValueLabel: Text("30")) { EmptyView() }
+                }
+                HStack {
+                    Text("sidesScaling: ").frame(width: 120)
+                    Slider(value: $sidesScaling, in: 0...1, minimumValueLabel: Text("0"), maximumValueLabel: Text("1")) { EmptyView() }
+                }
+                HStack {
+                    Toggle(isOn: $isWrap, label: {
+                        Text("wrap: ").frame(width: 120)
+                    })
+                }
+                VStack {
+                    HStack {
+                        Toggle(isOn: $autoScroll, label: {
+                            Text("autoScroll: ").frame(width: 120)
+                        })
+                    }
+                    if autoScroll {
+                        HStack {
+                            Text("duration: ").frame(width: 120)
+                            Slider(value: $duration, in: 1...10, minimumValueLabel: Text("1"), maximumValueLabel: Text("10")) { EmptyView() }
+                        }
+                    }
+                }
+            }
+        }
+        .padding([.horizontal, .bottom])
+    }
+}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        ContentView()
     }
 }
